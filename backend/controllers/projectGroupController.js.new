@@ -1,0 +1,145 @@
+const mongoose = require('mongoose');
+const ProjectGroupRegistration = require('../models/projectGroupRegistration');
+const ProjectForm = require('../models/projectForm');
+const Student = require('../models/student');
+
+exports.registerGroup = async (req, res) => {
+  try {
+    const { formId, projectIndex, teamLeader, teamMembers, projectId } = req.body;
+    const allStudentIds = [teamLeader, ...teamMembers];
+
+    // 1. Get the form and verify it exists and is active
+    const form = await ProjectForm.findById(formId);
+    if (!form || !form.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project form not found or is inactive'
+      });
+    }
+
+    // 2. Check if all students are in unregistered list
+    const notUnregistered = allStudentIds.filter(id => !form.unregisteredStudents.includes(id));
+    if (notUnregistered.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `These students are not eligible for registration: ${notUnregistered.join(', ')}`
+      });
+    }
+
+    // 3. Verify project exists and has available slots
+    const project = form.projects[projectIndex];
+    if (!project) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid project index'
+      });
+    }
+
+    if (project.registeredGroups >= project.maxGroups) {
+      return res.status(400).json({
+        success: false,
+        message: 'No slots available for this project'
+      });
+    }
+
+    // 4. Verify team size
+    const teamSize = teamMembers.length + 1; // Including leader
+    if (teamSize < project.minMembers || teamSize > project.maxMembers) {
+      return res.status(400).json({
+        success: false,
+        message: `Team size must be between ${project.minMembers} and ${project.maxMembers}`
+      });
+    }
+
+    // Start a transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Create the registration
+      const registration = new ProjectGroupRegistration({
+        formId,
+        projectIndex,
+        teamLeader,
+        teamMembers,
+        year: form.year
+      });
+      await registration.save({ session });
+
+      // Move students from unregistered to registered
+      form.unregisteredStudents = form.unregisteredStudents.filter(id => !allStudentIds.includes(id));
+      form.registeredStudents.push(...allStudentIds);
+
+      // Increment registeredGroups for the project
+      form.projects[projectIndex].registeredGroups += 1;
+      await form.save({ session });
+
+      // Update team leader
+      await Student.findOneAndUpdate(
+        { studentId: teamLeader },
+        {
+          projectId: projectId,
+          role: 'team_leader'
+        },
+        { session }
+      );
+
+      // Update team members
+      await Student.updateMany(
+        { studentId: { $in: teamMembers } },
+        {
+          projectId: projectId,
+          role: 'student'
+        },
+        { session }
+      );
+
+      await session.commitTransaction();
+
+      res.status(201).json({
+        success: true,
+        message: 'Group registration successful',
+        data: {
+          registration,
+          project: project.title,
+          teamSize,
+          registeredGroups: project.registeredGroups + 1,
+          maxGroups: project.maxGroups
+        }
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  } catch (error) {
+    console.error('Error registering group:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+exports.getGroups = async (req, res) => {
+  try {
+    const { formId } = req.params;
+    const groups = await ProjectGroupRegistration.find({ formId })
+      .populate('formId', 'year projects registeredStudents unregisteredStudents')
+      .sort('-registeredAt');
+    
+    res.json({
+      success: true,
+      data: groups,
+      count: groups.length
+    });
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
