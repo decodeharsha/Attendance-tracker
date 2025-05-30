@@ -2,7 +2,10 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const uri = 'mongodb+srv://orishinarayana:rishi2006@cluster0.qd8rzos.mongodb.net/newtest2?retryWrites=true&w=majority';
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error('MONGODB_URI not set in .env');
+    }
     console.log('Attempting to connect to MongoDB Atlas...');
     
     await mongoose.connect(uri, {

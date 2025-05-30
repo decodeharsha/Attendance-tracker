@@ -22,6 +22,60 @@ class _DownloadAttendanceScreenState extends State<DownloadAttendanceScreen> {
   DateTime? _selectedDate;
   bool _isLoading = false;
 
+  List<Map<String, dynamic>> _projects = [];
+  List<Map<String, dynamic>> _filteredProjects = [];
+  String? _selectedProjectId;
+  bool _isLoadingProjects = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProjects();
+  }
+
+  Future<void> _loadProjects() async {
+    setState(() {
+      _isLoadingProjects = true;
+    });
+    try {
+      final projects = await ApiService().getProjects();
+      setState(() {
+        _projects = projects;
+        _filteredProjects = projects;
+        _isLoadingProjects = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingProjects = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load projects'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _filterProjects(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredProjects = _projects;
+      } else {
+        _filteredProjects = _projects.where((project) {
+          final projectId = project['projectId'].toString().toLowerCase();
+          final title = project['title'].toString().toLowerCase();
+          final searchQuery = query.toLowerCase();
+          return projectId.contains(searchQuery) || title.contains(searchQuery);
+        }).toList();
+      }
+    });
+  }
+
+  void _handleProjectIdChange(String value) {
+    _filterProjects(value);
+    setState(() {
+      _selectedProjectId = value.trim();
+    });
+  }
+
   @override
   void dispose() {
     _projectIdController.dispose();
@@ -29,10 +83,11 @@ class _DownloadAttendanceScreenState extends State<DownloadAttendanceScreen> {
   }
 
   Future<void> _downloadAttendance() async {
-    if (_projectIdController.text.isEmpty || _selectedDate == null) {
+    final projectId = _selectedProjectId ?? _projectIdController.text;
+    if (projectId.isEmpty || _selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter both project ID and date'),
+          content: Text('Please select both project and date'),
           backgroundColor: Colors.red,
         ),
       );
@@ -51,7 +106,7 @@ class _DownloadAttendanceScreenState extends State<DownloadAttendanceScreen> {
       final formattedDate = '${dateParts[0]}-${dateParts[1]}-${dateParts[2]}';
 
       final attendanceDetails = await ApiService().getAttendanceDetails(
-        _projectIdController.text,
+        projectId,
         formattedDate,
       );
 
@@ -69,7 +124,7 @@ class _DownloadAttendanceScreenState extends State<DownloadAttendanceScreen> {
       final csvData = _convertToCSV(attendanceDetails);
       final bytes = utf8.encode(csvData);
       final fileName = 'attendance_${_projectIdController.text}_$formattedDate.csv';
-      
+
       try {
         if (kIsWeb) {
           // Web platform - use universal_html
@@ -79,12 +134,12 @@ class _DownloadAttendanceScreenState extends State<DownloadAttendanceScreen> {
           final anchor = html.AnchorElement(href: downloadUrl)
             ..setAttribute('download', fileName)
             ..style.display = 'none';
-          
+
           html.document.body?.append(anchor);
           anchor.click();
           anchor.remove();
           html.Url.revokeObjectUrl(downloadUrl);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('File downloaded successfully'),
@@ -94,7 +149,7 @@ class _DownloadAttendanceScreenState extends State<DownloadAttendanceScreen> {
         } else {
           // For mobile platforms - save directly to device's Download folder
           final filePath = await ApiService().saveFileToDevice(bytes, fileName);
-          
+
           // Show a message with the file location and option to open
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -154,10 +209,6 @@ class _DownloadAttendanceScreenState extends State<DownloadAttendanceScreen> {
       });
     }
   }
-  
-  // Permission handling is now done at app startup
-  
-  // We'll use ApiService's saveFileToDevice method directly instead of this method
 
   String _convertToCSV(Map<String, dynamic> attendanceDetails) {
     final StringBuffer csv = StringBuffer();
@@ -180,7 +231,7 @@ class _DownloadAttendanceScreenState extends State<DownloadAttendanceScreen> {
         }
         studentAttendance[student['studentId']]!['periods'][int.parse(period) - 1] = 'Present';
       }
-      
+
       // Add absent students
       for (var student in data['absent']) {
         if (!studentAttendance.containsKey(student['studentId'])) {
@@ -192,13 +243,13 @@ class _DownloadAttendanceScreenState extends State<DownloadAttendanceScreen> {
         studentAttendance[student['studentId']]!['periods'][int.parse(period) - 1] = 'Absent';
       }
     });
-    
+
     // Write student attendance data
     studentAttendance.forEach((rollNumber, data) {
       final periods = data['periods'] as List<String>;
       csv.writeln('$rollNumber,${data['name']},${periods.join(',')}');
     });
-    
+
     return csv.toString();
   }
 
@@ -223,16 +274,42 @@ class _DownloadAttendanceScreenState extends State<DownloadAttendanceScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    TextField(
-                      controller: _projectIdController,
-                      decoration: InputDecoration(
-                        labelText: 'Project ID',
-                        prefixIcon: Icon(Icons.assignment),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
+                    _isLoadingProjects
+                        ? Center(child: CircularProgressIndicator())
+                        : Autocomplete<Map<String, dynamic>>(
+  optionsBuilder: (TextEditingValue textEditingValue) {
+    if (textEditingValue.text.isEmpty) {
+      return _projects;
+    }
+    return _projects.where((project) {
+      final projectId = project['projectId'].toString().toLowerCase();
+      final title = project['title'].toString().toLowerCase();
+      final searchQuery = textEditingValue.text.toLowerCase();
+      return projectId.contains(searchQuery) || title.contains(searchQuery);
+    });
+  },
+  displayStringForOption: (option) =>
+      '${option['title']} (${option['projectId']})',
+  fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      decoration: InputDecoration(
+        labelText: 'Project',
+        prefixIcon: Icon(Icons.assignment),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  },
+  onSelected: (Map<String, dynamic> selection) {
+    setState(() {
+      _selectedProjectId = selection['projectId'];
+      _projectIdController.text = selection['projectId'];
+    });
+  },
+),
                     SizedBox(height: 16),
                     InkWell(
                       onTap: () async {
@@ -291,4 +368,4 @@ class _DownloadAttendanceScreenState extends State<DownloadAttendanceScreen> {
       ),
     );
   }
-} 
+}

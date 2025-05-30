@@ -20,10 +20,29 @@ import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path_lib;
 
 class ApiService {
+  // Admin: Reset any user's password to 'password123'
+  Future<void> adminResetUserPassword(String userId, String userType) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    final url = await baseUrl;
+    final response = await http.post(
+      Uri.parse('$url/auth/admin-reset-password'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'userId': userId, 'userType': userType}),
+    );
+    if (response.statusCode != 200) {
+      final data = jsonDecode(response.body);
+      throw Exception(data['message'] ?? 'Failed to reset password');
+    }
+  }
+
   // Default server URLs
   final String _defaultWebUrl = 'http://localhost:3000/api';
-  final String _defaultAndroidEmulatorUrl = 'http://192.168.29.216:3000/api'; // Android emulator URL
-  final String _defaultPhysicalDeviceUrl = 'http://192.168.29.216:3000/api'; // Change this to your computer's IP address
+  final String _defaultAndroidEmulatorUrl = 'http://192.168.156.241:3000/api'; // Android emulator URL
+  final String _defaultPhysicalDeviceUrl = 'http://192.168.156.241:3000/api'; // Change this to your computer's IP address
 
   // Get the base URL based on platform
   Future<String> get baseUrl async {
@@ -457,12 +476,22 @@ class ApiService {
       print('Response status code: ${response.statusCode}');
       print('Response body: ${response.body}');
 
+      // Detect HTML error (e.g. <!DOCTYPE html>)
+      if (response.headers['content-type']?.contains('text/html') == true || response.body.trim().startsWith('<!DOCTYPE')) {
+        print('Received HTML response instead of JSON.');
+        throw Exception('Server error: Received HTML instead of JSON. Possible wrong API URL or server error.');
+      }
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data;
       } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Failed to toggle project form status');
+        try {
+          final errorData = jsonDecode(response.body);
+          throw Exception(errorData['message'] ?? 'Failed to toggle project form status');
+        } catch (e) {
+          throw Exception('Failed to toggle project form status. Invalid server response.');
+        }
       }
     } catch (e) {
       print('Error in toggleProjectFormStatus: $e');

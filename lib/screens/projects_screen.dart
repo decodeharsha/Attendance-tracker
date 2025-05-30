@@ -62,21 +62,34 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   Future<void> _deleteProject(String projectId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete Project'),
-        content: Text('Are you sure you want to delete this project?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel'),
+      builder: (context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final dialogWidth = screenWidth * 0.85;
+        return AlertDialog(
+          title: Text('Delete Project'),
+          content: Container(
+            width: dialogWidth,
+            constraints: BoxConstraints(
+              maxWidth: dialogWidth,
+              minWidth: 200,
+            ),
+            child: SingleChildScrollView(
+              child: Text('Are you sure you want to delete this project?'),
+            ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('Delete'),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('Delete'),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed == true) {

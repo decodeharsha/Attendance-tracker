@@ -93,6 +93,9 @@ exports.getForms = async (req, res) => {
       query.year = req.user.year;
       console.log('Student viewing forms for year:', req.user.year);
     }
+    // If admin or faculty, do not filter by year or isActive (see all forms)
+    // No additional filtering needed for admin/faculty
+
     
     console.log('Query:', query);
     console.log('User role:', req.user.role);
@@ -130,7 +133,8 @@ exports.getForms = async (req, res) => {
           description: project.description,
           maxGroups: project.maxGroups,
           minMembers: project.minMembers,
-          maxMembers: project.maxMembers
+          maxMembers: project.maxMembers,
+          registeredGroups: project.registeredGroups ?? 0
         })),
       createdAt: form.createdAt
     }));

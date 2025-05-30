@@ -8,6 +8,8 @@ import 'reset_password_screen.dart';
 import 'create_project_screen.dart';
 import 'projects_screen.dart';
 import 'form_registration_details_screen.dart';
+import 'admin_reset_user_password_screen.dart';
+import 'project_forms_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   @override
@@ -43,64 +45,74 @@ class _AdminDashboardState extends State<AdminDashboard> {
       final attendance = await ApiService().getStudentAttendance(_studentIdController.text);
       showDialog(
         context: context,
-        builder: (_) => AlertDialog(
-          title: Text('Attendance Details'),
-          content: Container(
-            width: double.maxFinite,
-            child: Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        builder: (_) {
+          final screenWidth = MediaQuery.of(context).size.width;
+          final dialogWidth = screenWidth * 0.85;
+          return AlertDialog(
+            title: Text('Attendance Details'),
+            content: Container(
+              width: dialogWidth,
+              constraints: BoxConstraints(
+                maxWidth: dialogWidth,
+                minWidth: 200,
               ),
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildAttendanceInfo(
-                      icon: Icons.person,
-                      label: 'Student ID',
-                      value: attendance.studentId,
+              child: SingleChildScrollView(
+                child: Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildAttendanceInfo(
+                          icon: Icons.person,
+                          label: 'Student ID',
+                          value: attendance.studentId,
+                        ),
+                        SizedBox(height: 16),
+                        _buildAttendanceInfo(
+                          icon: Icons.check_circle,
+                          label: 'Sessions Present',
+                          value: attendance.sessionsPresent.toString(),
+                        ),
+                        SizedBox(height: 8),
+                        _buildAttendanceInfo(
+                          icon: Icons.calendar_today,
+                          label: 'Total Sessions',
+                          value: attendance.sessionsHeld.toString(),
+                        ),
+                        SizedBox(height: 16),
+                        LinearProgressIndicator(
+                          value: attendance.sessionsHeld == 0
+                              ? 0
+                              : attendance.sessionsPresent / attendance.sessionsHeld,
+                          backgroundColor: Colors.grey[200],
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            attendance.sessionsHeld == 0
+                                ? Colors.grey
+                                : (attendance.sessionsPresent / attendance.sessionsHeld) < 0.75
+                                    ? Colors.red
+                                    : Colors.green,
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 16),
-                    _buildAttendanceInfo(
-                      icon: Icons.check_circle,
-                      label: 'Sessions Present',
-                      value: attendance.sessionsPresent.toString(),
-                    ),
-                    SizedBox(height: 8),
-                    _buildAttendanceInfo(
-                      icon: Icons.calendar_today,
-                      label: 'Total Sessions',
-                      value: attendance.sessionsHeld.toString(),
-                    ),
-                    SizedBox(height: 16),
-                    LinearProgressIndicator(
-                      value: attendance.sessionsHeld == 0
-                          ? 0
-                          : attendance.sessionsPresent / attendance.sessionsHeld,
-                      backgroundColor: Colors.grey[200],
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        attendance.sessionsHeld == 0
-                            ? Colors.grey
-                            : (attendance.sessionsPresent / attendance.sessionsHeld) < 0.75
-                                ? Colors.red
-                                : Colors.green,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Close'),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Close'),
+              ),
+            ],
+          );
+        },
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -390,7 +402,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   child: InkWell(
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => ProjectsScreen()),
+                      MaterialPageRoute(builder: (_) => AdminResetUserPasswordScreen()),
                     ),
                     borderRadius: BorderRadius.circular(16),
                     child: Padding(
@@ -404,7 +416,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
-                              Icons.assignment,
+                              Icons.lock_reset,
                               color: Colors.orange,
                               size: 24,
                             ),
@@ -415,7 +427,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Manage Projects',
+                                  'Reset User Password',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -423,7 +435,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 ),
                                 SizedBox(height: 4),
                                 Text(
-                                  'View and create projects',
+                                  'Reset any user password to password123',
                                   style: TextStyle(
                                     color: themeProvider.isDarkMode ? Colors.grey[400] : Colors.grey[600],
                                   ),
@@ -446,10 +458,71 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: InkWell(
-                    onTap: () => Navigator.pushNamed(context, '/project-forms'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ProjectsScreen()),
+                    ),
                     borderRadius: BorderRadius.circular(16),
                     child: Padding(
                       padding: EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.assignment,
+                              color: Colors.blue,
+                              size: 24,
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Projects',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'View and manage all projects',
+                                  style: TextStyle(
+                                    color: themeProvider.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            color: themeProvider.isDarkMode ? Colors.grey[400] : Colors.grey[400],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Card(
+  elevation: 4,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(16),
+  ),
+  child: InkWell(
+    onTap: () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ProjectFormsScreen()),
+    ),
+    borderRadius: BorderRadius.circular(16),
+    child: Padding(
+      padding: EdgeInsets.all(16.0),
                       child: Row(
                         children: [
                           Container(

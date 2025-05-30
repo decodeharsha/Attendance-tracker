@@ -5,6 +5,7 @@ import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' as io;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'screens/student_dashboard.dart';
 import 'screens/faculty_dashboard.dart';
 import 'screens/admin_dashboard.dart';
@@ -20,7 +21,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Request all necessary permissions at app startup
-  if (io.Platform.isAndroid) {
+  if (!kIsWeb && io.Platform.isAndroid) {
     await requestPermissions();
   }
   

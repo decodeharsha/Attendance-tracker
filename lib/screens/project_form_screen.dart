@@ -234,23 +234,36 @@ class _ProjectFormScreenState extends State<ProjectFormScreen> {
       // Show confirmation dialog
       final shouldDelete = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Delete Form'),
-          content: Text('Are you sure you want to delete this form? This action cannot be undone.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                'Delete',
-                style: TextStyle(color: Colors.red),
+        builder: (context) {
+          final screenWidth = MediaQuery.of(context).size.width;
+          final dialogWidth = screenWidth * 0.85;
+          return AlertDialog(
+            title: Text('Delete Form'),
+            content: Container(
+              width: dialogWidth,
+              constraints: BoxConstraints(
+                maxWidth: dialogWidth,
+                minWidth: 200,
+              ),
+              child: SingleChildScrollView(
+                child: Text('Are you sure you want to delete this form? This action cannot be undone.'),
               ),
             ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          );
+        },
       );
 
       if (shouldDelete != true) {

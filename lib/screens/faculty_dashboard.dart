@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import 'projects_screen.dart';
 import 'attendance_marking_screen.dart';
 import 'reset_password_screen.dart';
+import 'download_attendance_screen.dart';
 
 class FacultyDashboard extends StatelessWidget {
   @override
@@ -286,6 +287,65 @@ class FacultyDashboard extends StatelessWidget {
                               SizedBox(height: 4),
                               Text(
                                 'Edit previously marked attendance',
+                                style: TextStyle(
+                                  color: themeProvider.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          color: themeProvider.isDarkMode ? Colors.grey[400] : Colors.grey[400],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: InkWell(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => DownloadAttendanceScreen()),
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.download,
+                            color: Colors.green,
+                            size: 24,
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Download Attendance',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Download attendance CSV for a project/date',
                                 style: TextStyle(
                                   color: themeProvider.isDarkMode ? Colors.grey[400] : Colors.grey[600],
                                 ),

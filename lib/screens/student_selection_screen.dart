@@ -246,6 +246,37 @@ class _StudentSelectionScreenState extends State<StudentSelectionScreen> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      absentStudents.clear();
+                    });
+                  },
+                  child: Text('All Present'),
+                ),
+                SizedBox(width: 16),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      absentStudents = students.map((s) => s['studentId']!).toList();
+                    });
+                  },
+                  child: Text('All Absent'),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: GridView.builder(
               padding: EdgeInsets.all(16.0),
@@ -260,6 +291,7 @@ class _StudentSelectionScreenState extends State<StudentSelectionScreen> {
                 final student = students[index];
                 final studentId = student['studentId']!;
                 final isAbsent = absentStudents.contains(studentId);
+                final lastThree = studentId.length > 3 ? studentId.substring(studentId.length - 3) : studentId;
                 return GestureDetector(
                   onTap: () {
                     setState(() {
@@ -275,28 +307,15 @@ class _StudentSelectionScreenState extends State<StudentSelectionScreen> {
                       color: isAbsent ? Colors.red : Colors.green,
                       shape: BoxShape.circle,
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          student['name'] ?? studentId,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                    child: Center(
+                      child: Text(
+                        lastThree,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
-                        Text(
-                          studentId,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 );

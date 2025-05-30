@@ -105,19 +105,34 @@ class _ProjectRegistrationScreenState extends State<ProjectRegistrationScreen> {
 
       print('Sending group data: $groupData');
 
-      await ApiService().registerProjectGroup(groupData);
-      
+      String? responseMsg;
+      try {
+        await ApiService().registerProjectGroup(groupData);
+        responseMsg = 'Project group registered successfully'; // fallback
+      } catch (e) {
+        responseMsg = e.toString();
+        rethrow;
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Project group registered successfully')),
+          SnackBar(
+            content: Text(responseMsg ?? 'Project group registered successfully'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context, true);
       }
     } catch (e) {
       print('Error registering group: $e');
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
         setState(() {
-          _errorMessage = e.toString();
+          _errorMessage = null;
         });
       }
     } finally {

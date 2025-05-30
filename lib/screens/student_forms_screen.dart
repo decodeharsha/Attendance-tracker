@@ -233,31 +233,49 @@ class _StudentFormsScreenState extends State<StudentFormsScreen> {
                                 ),
                                 SizedBox(height: 8),
                                 ...form['projects'].map<Widget>((project) {
+                                  // Calculate available slots
+                                  final int maxGroups = project['maxGroups'] ?? 0;
+                                  final int registeredGroups = project['registeredGroups'] ?? 0;
+                                  final int availableSlots = maxGroups - registeredGroups;
                                   return Card(
                                     margin: EdgeInsets.only(bottom: 8),
                                     child: ListTile(
                                       title: Text(project['title']),
-                                      subtitle: Text(
-                                        'Max Groups: ${project['maxGroups']}\n'
-                                        'Team Size: ${project['minMembers']}-${project['maxMembers']} members',
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Max Groups: $maxGroups\nTeam Size: ${project['minMembers']}-${project['maxMembers']} members',
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            'Available Slots: $availableSlots',
+                                            style: TextStyle(
+                                              color: availableSlots > 0 ? Colors.green : Colors.red,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                       trailing: ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => ProjectRegistrationScreen(
-                                                project: project,
-                                                formId: form['_id'],
-                                                projectIndex: form['projects'].indexOf(project),
-                                              ),
-                                            ),
-                                          ).then((registered) {
-                                            if (registered == true) {
-                                              _loadForms(); // Refresh the forms list
-                                            }
-                                          });
-                                        },
+                                        onPressed: availableSlots > 0
+                                            ? () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) => ProjectRegistrationScreen(
+                                                      project: project,
+                                                      formId: form['_id'],
+                                                      projectIndex: form['projects'].indexOf(project),
+                                                    ),
+                                                  ),
+                                                ).then((registered) {
+                                                  if (registered == true) {
+                                                    _loadForms(); // Refresh the forms list
+                                                  }
+                                                });
+                                              }
+                                            : null, // Disable the button if no slots
                                         child: Text('Register'),
                                       ),
                                     ),

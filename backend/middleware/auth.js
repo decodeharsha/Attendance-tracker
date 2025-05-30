@@ -1,3 +1,4 @@
+require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const Student = require('../models/student');
 const Admin = require('../models/admin');
@@ -13,7 +14,7 @@ module.exports = async (req, res, next) => {
     }
 
     console.log('Auth middleware - Verifying token:', token);
-    const decoded = jwt.verify(token, 'secret');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('Auth middleware - Decoded token:', decoded);
     
     // Check if user is a student
